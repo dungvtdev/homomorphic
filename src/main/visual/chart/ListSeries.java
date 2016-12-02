@@ -22,4 +22,9 @@ public class ListSeries extends Series {
     public double getMax() {
         return 0;
     }
+
+    @Override
+    public double getMin() {
+        return 0;
+    }
 }

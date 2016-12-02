@@ -6,9 +6,9 @@ import visual.chart.Series;
  */
 public class Testbed {
     public static void main(String[] argv){
-        RangeSeries series = new RangeSeries("test", 510, 12422);
-//        printSeriesTest(series, 10);
-//        printSeriesTest(series, 21);
+        RangeSeries series = new RangeSeries("test", -1510, 1222);
+        printSeriesTest(series, 10);
+        printSeriesTest(series, 21);
         printSeriesTest(series, 150);
 
     }

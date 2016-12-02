@@ -23,4 +23,5 @@ public abstract class Series {
     }
 
     public abstract double getMax();
+    public abstract double getMin();
 }

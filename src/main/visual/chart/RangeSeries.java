@@ -15,11 +15,21 @@ public class RangeSeries extends Series {
         this.max = max;
     }
 
+
     @Override
     public SeriesLabels getSeriesLabels(int maxLength) {
+        double nmin = min;
+        double nmax = max;
+        if(min<0){
+            nmin = 0;
+            nmax = Math.max(-min, max);
+        }
+        int nMaxLength = (int)Math.ceil((nmax-nmin)/(max - min)*maxLength);
+
         float maxGap = gaps[gaps.length-1];
 
-        double amount = (max - min)/(maxLength -2);
+        //TODO kiem tra nMaxLength < 2
+        double amount = (nmax - nmin)/nMaxLength;
         double scale = 1;
         // find gap
         while(amount > maxGap) {
@@ -27,7 +37,7 @@ public class RangeSeries extends Series {
             scale*=maxGap;
         }
         // tim prototype gap >= amount/maxlength
-        double tgap = amount;//(int)(amount/(maxLength-2));
+        double tgap = amount;
         for(int i=0;i<gaps.length;i++){
             if(gaps[i]>tgap){
                 tgap=gaps[i];
@@ -37,18 +47,45 @@ public class RangeSeries extends Series {
 
         double gap = tgap*scale;
 
-        //find min
-        double gmin = Math.floor(min/gap)*gap;
+        if(min<0){
+            // lam phan am
+            int nNegValues = (int)Math.ceil(-min/gap);
+            int nPosValues = (int)Math.ceil((max)/gap)+1;             //them 1 de dien max vao cuoi
 
-        // calc labels
-        int nLabels = (int)Math.ceil((max-gmin)/gap);
-        String[] labels = new String[nLabels];
-        double[] values = new double[nLabels];
-        for(int i=0;i<nLabels;i++){
-            values[i] = gmin+i*gap;
-            labels[i] = String.format("%.0f", values[i]);
+            double[] values = new double[nNegValues+nPosValues];      // lap lai so 0, nhung cong them min
+            String[] labels = new String[nNegValues+nPosValues];
+            values[0] = min;
+            int index = 1;
+            for(int i=-nNegValues+1;i<nPosValues-1;i++,index++){
+                values[index] = i*gap;
+            }
+            values[index] = max;
+            for(int i=0;i<values.length;i++){
+                labels[i] = String.format("%.0f", values[i]);
+            }
+            return new SeriesLabels(labels, values);
+
+        }else{
+            //find min
+            double gmin = Math.floor(nmin/gap)*gap;
+            // calc labels
+            int nLabels = (int)Math.ceil((nmax-gmin)/gap)+1;        //them 1 de dien max vao cuoi
+            String[] labels = new String[nLabels];
+            double[] values = new double[nLabels];
+            if(gmin<nmin){
+                values[0]=nmin;
+            }else{
+                values[0]=gmin;
+            }
+            for(int i=1;i<nLabels-1;i++){
+                values[i] = gmin+i*gap;
+            }
+            values[nLabels-1]=max;
+            for(int i=0;i<nLabels;i++){
+                labels[i] = String.format("%.0f", values[i]);
+            }
+            return new SeriesLabels(labels, values);
         }
-        return new SeriesLabels(labels, values);
 
 //        int gmin = (int)gapValue(min);
 //        float minGap = (max-gmin)/maxLength;
@@ -79,6 +116,11 @@ public class RangeSeries extends Series {
     @Override
     public double getMax() {
         return this.max;
+    }
+
+    @Override
+    public double getMin() {
+        return this.min;
     }
 
 //    private double gapValue(double value){
