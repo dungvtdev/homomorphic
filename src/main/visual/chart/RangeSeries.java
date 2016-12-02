@@ -6,10 +6,10 @@ package visual.chart;
 public class RangeSeries extends Series {
     private int[] gaps = new int[]{1,5,10,50,100,500,1000};
 
-    public float min;
-    public float max;
+    public double min;
+    public double max;
 
-    public RangeSeries(String label, float min, float max){
+    public RangeSeries(String label, double min, double max){
         super(label);
         this.min = min;
         this.max = max;
