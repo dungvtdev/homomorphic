@@ -1,5 +1,9 @@
 package app;
 
+import visual.chart.LineChart;
+import visual.chart.LineChartPane;
+import visual.chart.RangeSeries;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -106,8 +110,8 @@ public class MainForm extends JFrame {
 
         JLabel lb = new JLabel("Signal");
 
-        JPanel canvas = new JPanel();
-        canvas.setPreferredSize(new Dimension(640,300));
+        LineChartPane chart = new LineChartPane();
+        chart.setPreferredSize(new Dimension(640,300));
 
         Box toolpane = Box.createHorizontalBox();
         JButton btnPrev = new JButton("Prev");
@@ -120,10 +124,11 @@ public class MainForm extends JFrame {
 
         pane.add(lb);
         pane.add(Box.createRigidArea(new Dimension(0,5)));
-        pane.add(canvas);
+        pane.add(chart);
         pane.add(Box.createRigidArea(new Dimension(0,5)));
         pane.add(toolpane);
 
         return pane;
     }
+
 }
