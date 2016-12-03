@@ -7,24 +7,38 @@ import java.util.List;
  */
 public class ListSeries extends Series {
     public double[] series;
+    private double max;
+    private double min;
 
     public ListSeries(String name, double[] series){
         super(name);
         this.series = series;
+        max = min = series[0];
+        for(double i : series){
+            if(max < i) max = i;
+            if(min > i) min = i;
+        }
     }
 
     @Override
     public SeriesLabels getSeriesLabels(int maxLength) {
-        return null;
+        RangeSeries range = new RangeSeries(this.label, min, max);
+        return range.getSeriesLabels(maxLength);
     }
 
     @Override
     public double getMax() {
-        return 0;
+        return max;
     }
 
     @Override
     public double getMin() {
-        return 0;
+        return min;
     }
+
+    public double[] getSeries(){
+        return this.series;
+    }
+
+
 }

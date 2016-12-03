@@ -24,4 +24,12 @@ public abstract class Series {
 
     public abstract double getMax();
     public abstract double getMin();
+
+    public ScaleRange getScaleRange(Series toSeries){
+        return new ScaleRange(getMin(), getMax(), toSeries.getMin(), toSeries.getMax());
+    }
+
+    public ScaleRange getScaleRange(double toMin, double toMax){
+        return new ScaleRange(getMin(), getMax(), toMin, toMax);
+    }
 }
