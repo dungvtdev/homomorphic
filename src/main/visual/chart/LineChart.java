@@ -5,6 +5,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
+import java.security.InvalidParameterException;
 
 /**
  * Created by dung on 01/12/2016.
@@ -53,8 +54,13 @@ public class LineChart {
     public void draw(Graphics2D g2d, Dimension size, int horizontalGap,
                      Series xSeries, Series ySeries, Color lineColor){
 
-        int maxXLabels = 10;
-        int maxYLabels = 10;
+        if(xSeries==null || ySeries==null || size==null ||lineColor==null){
+//            throw new InvalidParameterException("xSeries, ySeries, size, lineColor not set");
+            return;
+        }
+
+        int maxXLabels = 20;
+        int maxYLabels = 20;
         Series.SeriesLabels xLabels = xSeries.getSeriesLabels(maxXLabels);
         Series.SeriesLabels yLabels = ySeries.getSeriesLabels(maxYLabels);
 
@@ -62,6 +68,9 @@ public class LineChart {
 
         Font font = g2d.getFont();
         g2d.setFont(new Font(font.getFontName(), Font.PLAIN, 10));
+
+        Stroke stroke = g2d.getStroke();
+        g2d.setStroke(new BasicStroke(2));
 
         FontMetrics metrics = g2d.getFontMetrics();
         int textHeight = metrics.getHeight();
@@ -71,7 +80,7 @@ public class LineChart {
         if(yLabels.labels[0].length() > yLabels.labels[yLabels.labels.length-1].length()){
             borderWidth = metrics.stringWidth(yLabels.labels[0]);
         }else{
-            borderWidth = metrics.stringWidth(yLabels.labels[yLabels.labels.length]);
+            borderWidth = metrics.stringWidth(yLabels.labels[yLabels.labels.length-1]);
         }
         int axisNameSize = textHeight+6;
 
@@ -148,6 +157,7 @@ public class LineChart {
         }
 
         g2d.setColor(oldLineColor);
+        g2d.setStroke(stroke);
         g2d.setFont(font);
     }
 }

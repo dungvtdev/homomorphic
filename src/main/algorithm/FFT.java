@@ -3,9 +3,9 @@ package algorithm;
 public class FFT
 {
     public static double[][] fft(double[][] x){
-        int n = x[0].length;
-        double[][] fx = new double[2][n];
-        double[][] ffx = new double[2][n];
+        int n = x.length;
+        double[][] fx = new double[n][2];
+        double[][] ffx = new double[n][2];
 
         fft_rec(n, 0, 1, x, fx, ffx);
 
@@ -36,41 +36,41 @@ public class FFT
                 double alpha = (2*Math.PI*k)/n;
                 cs = Math.cos(alpha);
                 sn = Math.sin(alpha);
-                tmp0 = cs * ffx[0][k11] + sn * ffx[1][k11];
-                tmp1 = cs * ffx[1][k11] - sn * ffx[0][k11];
-                fx[0][k01] = ffx[0][k10] - tmp0;
-                fx[1][k01] = ffx[1][k10] - tmp1;
-                fx[0][k00] = ffx[0][k10] + tmp0;
-                fx[1][k00] = ffx[1][k10] + tmp1;
+                tmp0 = cs * ffx[k11][0] + sn * ffx[k11][1];
+                tmp1 = cs * ffx[k11][1] - sn * ffx[k11][0];
+                fx[k01][0] = ffx[k10][0] - tmp0;
+                fx[k01][1] = ffx[k10][1] - tmp1;
+                fx[k00][0] = ffx[k10][0] + tmp0;
+                fx[k00][1] = ffx[k10][1] + tmp1;
             }
         }
         else
         {
             k00 = offset; k01 = k00 + delta;
-            fx[0][k01] = x[0][k00] - x[0][k01];
-            fx[1][k01] = x[1][k00] - x[1][k01];
-            fx[0][k00] = x[0][k00] + x[0][k01];
-            fx[1][k00] = x[1][k00] + x[1][k01];
+            fx[k01][0] = x[k00][0] - x[k01][0];
+            fx[k01][1] = x[k00][1] - x[k01][1];
+            fx[k00][0] = x[k00][0] + x[k01][0];
+            fx[k00][1] = x[k00][1] + x[k01][1];
         }
     }
 
     /* IFFT */
     public static double[][] ifft(double[][] fx)
     {
-        int n = fx[0].length;
+        int n = fx.length;
         int n2 = n/2;       /* half the number of points in IFFT */
         int i;              /* generic index */
         double tmp0, tmp1;  /* temporary storage */
 
         /* Calculate IFFT via reciprocity property of DFT. */
         double[][] x=fft(fx);
-        x[0][0] /=n;    x[1][0] /=n;
-        x[0][n2] /=n;  x[1][n2] /=n;
+        x[0][0] = x[0][0]/n;    x[0][1] = x[0][1]/n;
+        x[n2][0] = x[n2][0]/n;  x[n2][1] = x[n2][1]/n;
         for(i=1; i<n2; i++)
         {
-            tmp0 = x[0][i]/n;       tmp1 = x[1][i]/n;
-            x[0][i] = x[0][n-i]/n;  x[1][i] = x[1][n-i]/n;
-            x[0][n-i] = tmp0;       x[1][n-i] = tmp1;
+            tmp0 = x[i][0]/n;       tmp1 = x[i][1]/n;
+            x[i][0] = x[n-i][0]/n;  x[i][1] = x[n-i][1]/n;
+            x[n-i][0] = tmp0;       x[n-i][1] = tmp1;
         }
 
         return x;
