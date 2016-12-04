@@ -18,7 +18,8 @@ public class LineChart {
     private int horizontalGap;
     private Color lineColor;
 
-    public LineChart(){}
+    private ScaleRange xRange;
+    private ScaleRange yRange;
 
     public LineChart(Graphics2D g2d){
         setGraphics2d(g2d);
@@ -72,6 +73,9 @@ public class LineChart {
         Stroke stroke = g2d.getStroke();
         g2d.setStroke(new BasicStroke(2));
 
+        Color oldLineColor = g2d.getColor();
+        g2d.setColor(Color.BLACK);
+
         FontMetrics metrics = g2d.getFontMetrics();
         int textHeight = metrics.getHeight();
 
@@ -93,9 +97,10 @@ public class LineChart {
 
         // x
 //        double rootx = xLabels.series[0];
-        ScaleRange scaleRangeX = new ScaleRange(xLabels.series[0],xLabels.series[xLabels.series.length-1], origin.x, origin.x+width);
+//        ScaleRange scaleRangeX = new ScaleRange(xLabels.series[0],xLabels.series[xLabels.series.length-1], origin.x, origin.x+width);
 //        double v2px = width/(xSeries.getMax()-rootx);
 //        double v2px = scaleRangeX.getScale();
+        ScaleRange scaleRangeX = xSeries.getScaleRange(origin.x, origin.x+width);
 
         for(int i=0;i<xLabels.labels.length;i++){
 //            int x = (int)((xLabels.series[i]-rootx)*v2px+origin.x);
@@ -108,8 +113,9 @@ public class LineChart {
 
         // y
 //        double rooty= yLabels.series[0];
-        ScaleRange scaleRangeY = new ScaleRange(yLabels.series[0],yLabels.series[yLabels.series.length-1], origin.y-horizontalGap, origin.y-height+horizontalGap);
+//        ScaleRange scaleRangeY = new ScaleRange(yLabels.series[0],yLabels.series[yLabels.series.length-1], origin.y-horizontalGap, origin.y-height+horizontalGap);
 //        double v2py = (height-topGap)/(ySeries.getMax()-rooty);
+        ScaleRange scaleRangeY = ySeries.getScaleRange(origin.y-horizontalGap, origin.y-height+horizontalGap);
         for(int i=0;i<yLabels.labels.length;i++){
 //            int y = (int)(origin.y - (yLabels.series[i]-rooty)*v2py);
             int y = (int) scaleRangeY.scaleValue(yLabels.series[i]);
@@ -131,13 +137,10 @@ public class LineChart {
         g2d.drawString(ySeries.label, -height/2 - borderHeight-nameWidth/2, axisNameSize);
         g2d.setTransform(ori_at);
 
-
         // draw data
         if(!(xSeries instanceof RangeSeries && ySeries instanceof ListSeries)) {
             throw new NotImplementedException();
         }
-
-        Color oldLineColor = g2d.getColor();
 
         g2d.setColor(lineColor);
         double[] series = ((ListSeries) ySeries).getSeries();
@@ -159,5 +162,16 @@ public class LineChart {
         g2d.setColor(oldLineColor);
         g2d.setStroke(stroke);
         g2d.setFont(font);
+
+        // export
+        ScaleRange.expandRange(scaleRangeX, origin.x, origin.x+width);
+        ScaleRange.expandRange(scaleRangeY, origin.y, origin.y-height);
+        this.xRange = scaleRangeX;
+        this.yRange = scaleRangeY;
     }
+
+    public ScaleRange getXScaleRange(){return xRange;}
+
+    public ScaleRange getYScaleRange(){return yRange;}
+
 }

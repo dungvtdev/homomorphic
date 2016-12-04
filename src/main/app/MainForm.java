@@ -12,6 +12,11 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.xml.bind.JAXBContext;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
 import java.io.File;
 import java.util.Random;
 import java.util.zip.GZIPOutputStream;
@@ -29,6 +34,11 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
     private ChartPanel phaseResponseChart;
     private JLabel lbHammingStatus;
 
+    private JButton btnPrev;
+    private JButton btnPlay;
+    private JButton btnNext;
+
+    private State state;
 
     // can chinh panel cho de
     private final int[] colSizes = new int[]{240, 450, 450};
@@ -38,6 +48,8 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
         this.controller = new Controller();
 
         initUI();
+
+        setState(State.Normal);
 
         //test
         File file = new File("/home/dung/wavefile/A96.wav");
@@ -103,7 +115,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
         this.pack();
     }
 
-    private JMenuBar createMenu(){
+    private JMenuBar createMenu() {
         JMenuBar menuBar = new JMenuBar();
 
         JMenu mfile = new JMenu("File");
@@ -127,11 +139,11 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
         menuBar.add(mtools);
         menuBar.add(mhelp);
 
-        mFileOpen.addActionListener((ActionEvent event) ->{
+        mFileOpen.addActionListener((ActionEvent event) -> {
             JFileChooser fileChooser = new JFileChooser();
-            fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("*.wav","wav"));
+            fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("*.wav", "wav"));
             int returnVal = fileChooser.showOpenDialog(MainForm.this);
-            if(returnVal == JFileChooser.APPROVE_OPTION){
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
                 File file = fileChooser.getSelectedFile();
                 controller.openFile(file);
                 lbFileName.setText("File: " + file.getName());
@@ -141,59 +153,79 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
             }
         });
 
-        mFileQuit.addActionListener((ActionEvent event) ->{
+        mFileQuit.addActionListener((ActionEvent event) -> {
             System.exit(0);
         });
 
-        mToolFileInfo.addActionListener((ActionEvent event) ->{
+        mToolFileInfo.addActionListener((ActionEvent event) -> {
 
         });
 
-        mToolSetting.addActionListener((ActionEvent event) ->{
+        mToolSetting.addActionListener((ActionEvent event) -> {
 
         });
 
-        mAbout.addActionListener((ActionEvent event) ->{
+        mAbout.addActionListener((ActionEvent event) -> {
 
         });
 
         return menuBar;
     }
 
-    private JPanel createWavPanel(){
+    private JPanel createWavPanel() {
         JPanel pane = new JPanel();
         pane.setLayout(new BoxLayout(pane, BoxLayout.PAGE_AXIS));
 
         JLabel lb = new JLabel("Signal");
 
         wavChart = new WavChartPanel();
-        wavChart.setPreferredSize(new Dimension(colSizes[0]+colSizes[1],300));
+        wavChart.setPreferredSize(new Dimension(colSizes[0] + colSizes[1], 300));
 
         Box toolpane = Box.createHorizontalBox();
-        JButton btnPrev = new JButton("Prev");
-        JButton btnPlay = new JButton("Auto");
-        JButton btnNext = new JButton("Next");
+        btnPrev = new JButton("Prev");
+        btnPlay = new JButton("Auto");
+        btnNext = new JButton("Next");
+
+        btnPrev.addActionListener((ActionEvent event) -> {
+            controller.processBack(this);
+        });
+
+        btnPlay.addActionListener((ActionEvent event) -> {
+            if(state==State.Normal){
+                setState(State.Running);
+                controller.processAuto(this,(x)->{
+                    setState(State.Normal);
+                    return null;
+                });
+            }else{
+                controller.stopRunning();
+            }
+        });
+
+        btnNext.addActionListener((ActionEvent event) -> {
+            controller.processNext(this);
+        });
 
         toolpane.add(btnPrev);
         toolpane.add(btnPlay);
         toolpane.add(btnNext);
 
         pane.add(lb);
-        pane.add(Box.createRigidArea(new Dimension(0,5)));
+        pane.add(Box.createRigidArea(new Dimension(0, 5)));
         pane.add(wavChart);
-        pane.add(Box.createRigidArea(new Dimension(0,5)));
+        pane.add(Box.createRigidArea(new Dimension(0, 5)));
         pane.add(toolpane);
 
         return pane;
     }
 
-    private Container createHammingPanel(){
+    private Container createHammingPanel() {
         Box vBox = Box.createVerticalBox();
         JLabel lb = new JLabel("Hamming");
         hammingChart = new ChartPanel();
-        hammingChart.setPreferredSize(new Dimension(colSizes[2],300));
+        hammingChart.setPreferredSize(new Dimension(colSizes[2], 300));
 
-        lbHammingStatus=new JLabel("..");
+        lbHammingStatus = new JLabel("..");
 
         vBox.add(lb);
         vBox.add(hammingChart);
@@ -202,7 +234,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
         return vBox;
     }
 
-    private Container createFResponsePane(){
+    private Container createFResponsePane() {
         JPanel pane = new JPanel();
         pane.setLayout(new BoxLayout(pane, BoxLayout.PAGE_AXIS));
 
@@ -212,10 +244,10 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
         Box hBox = Box.createHorizontalBox();
 
         magResponseChart = new ChartPanel();
-        magResponseChart.setPreferredSize(new Dimension(colSizes[1],300));
+        magResponseChart.setPreferredSize(new Dimension(colSizes[1], 300));
 
         phaseResponseChart = new ChartPanel();
-        phaseResponseChart.setPreferredSize(new Dimension(colSizes[2],300));
+        phaseResponseChart.setPreferredSize(new Dimension(colSizes[2], 300));
 
         hBox.add(magResponseChart);
         hBox.add(phaseResponseChart);
@@ -226,88 +258,229 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
     }
 
 
-    private Container createInOutPane(){
+    private Container createInOutPane() {
         Box parent = Box.createVerticalBox();
         JLabel lb = new JLabel("Formant");
         parent.add(lb);
-        parent.setPreferredSize(new Dimension(colSizes[0],300));
+        parent.setPreferredSize(new Dimension(colSizes[0], 300));
         return parent;
     }
 
-    private class WavChartPanel extends ChartPanel{
-        @Override
-        public void paintComponent(Graphics g){
-            super.paintComponent(g);
+    private class WavChartPanel extends ChartPanel implements MouseListener{
+        private BufferedImage buffer;
+        private boolean orderRedrawChart = false;
+        private int currentSampleX=0;
+        private int windowSampleSize=512;
+
+        public WavChartPanel(){
+            this.addMouseListener(this);
         }
 
+        @Override
+        public void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.clearRect(0,0,getWidth(),getHeight());
+            // draw chart to buffer
+            checkRedrawChartBuffer();
+
+            // draw chart
+            g2d.drawImage(buffer, 0, 0, null);
+
+            // draw window
+            drawWindow(g2d);
+        }
+
+        private void drawWindow(Graphics2D g2d){
+            if(chart.getXScaleRange() !=null && chart.getYScaleRange() !=null){
+                int xleft = (int)chart.getXScaleRange().scaleValue(sampleToXTime(currentSampleX))+1;
+                int xright = (int)chart.getXScaleRange().scaleValue(sampleToXTime(currentSampleX+windowSampleSize));
+                int ybottom = (int)chart.getYScaleRange().scaleValue("min")-1;
+                int ytop = (int)chart.getYScaleRange().scaleValue("max")+1;
+
+                xright = (int)(Math.min(xright, chart.getXScaleRange().scaleValue("max")))-1;
+
+                // draw rect
+                Color color = g2d.getColor();
+
+                Composite composite = g2d.getComposite();
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, 0.75f));
+                g2d.setColor(Color.BLACK);
+                g2d.fillRect(xleft, ytop, xright-xleft, Math.abs(ytop-ybottom));
+
+                // draw arrow
+                Stroke stroke = g2d.getStroke();
+                g2d.setStroke(new BasicStroke(2));
+
+                g2d.setComposite(composite);
+                g2d.setColor(Color.RED);
+                g2d.fillPolygon(new int[]{xleft-8, xleft+8, xleft},
+                                new int[]{ytop-12, ytop-12, ytop},
+                                3);
+                g2d.drawLine(xleft, ybottom, xleft, ytop);
+
+                g2d.setStroke(stroke);
+                g2d.setColor(color);
+            }
+        }
+
+        private void checkRedrawChartBuffer() {
+            // draw chart to buffer
+            Dimension size = this.getSize();
+            if (buffer == null || buffer.getWidth() != size.width || buffer.getHeight() != size.height) {
+                buffer = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+                orderRedrawChart = true;
+            }
+
+            if (orderRedrawChart) {
+                Graphics2D gbuffer = buffer.createGraphics();
+                Color color = new Color(1.0f, 0.0f, 1.0f, 0.0f);
+                gbuffer.setColor(color);
+                gbuffer.fillRect(0, 0, size.width, size.height);
+                drawChartToGraphics(gbuffer);
+                orderRedrawChart = false;
+            }
+        }
+
+        public void setCurrentPointer(int index){
+            currentSampleX = index;
+            this.repaint();
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            if(state==State.Running)
+                return;
+
+            Point p = e.getPoint();
+            double ms = chart.getXScaleRange().inverseScaleValue(p.x);
+            currentSampleX = xTimeToSample(ms);
+            currentSampleX = controller.TruncateSampleIndex(currentSampleX);
+            System.out.printf("Mouse click %d\n",currentSampleX);
+//            this.repaint();
+            process(currentSampleX);    // process callback se repaint sau
+        }
+
+        @Override
+        public void mousePressed(MouseEvent e) {}
+
+        @Override
+        public void mouseReleased(MouseEvent e) {}
+
+        @Override
+        public void mouseEntered(MouseEvent e) {}
+
+        @Override
+        public void mouseExited(MouseEvent e) {}
     }
 
-    private class ChartPanel extends JPanel{
-        LineChart chart;
+    private class ChartPanel extends JPanel {
+        protected LineChart chart;
 
-        public ChartPanel(){
+        public ChartPanel() {
             chart = new LineChart(null);
             chart.setLineColor(Color.green);
             chart.setHorizontalGap(12);
         }
 
         @Override
-        public void paintComponent(Graphics g){
+        public void paintComponent(Graphics g) {
             super.paintComponent(g);
             System.out.println("repaint");
-            Graphics2D g2d = (Graphics2D)g;
+            Graphics2D g2d = (Graphics2D) g;
+            drawChartToGraphics(g2d);
+        }
+
+        public void drawChart(String xLabel, String yLabel, int xMin, int xMax, double[] series) {
+            setupChart(xLabel, yLabel, xMin, xMax, series);
+            this.repaint();
+        }
+
+        protected void setupChart(String xLabel, String yLabel, int xMin, int xMax, double[] series) {
+            Series xSeries = new RangeSeries(xLabel, xMin, xMax);
+            Series ySeries = new ListSeries(yLabel, series);
+            chart.setXSeriers(xSeries);
+            chart.setYSeries(ySeries);
+        }
+
+        protected void drawChartToGraphics(Graphics2D g2d) {
             chart.setDrawSize(this.getSize());
             chart.setGraphics2d(g2d);
             chart.draw();
         }
 
-        public void drawChart(String xLabel, String yLabel, int xMin, int xMax, double[] series){
-            Series xSeries = new RangeSeries(xLabel,xMin,xMax);
-            Series ySeries = new ListSeries(yLabel, series);
-            chart.setXSeriers(xSeries);
-            chart.setYSeries(ySeries);
-            this.repaint();
-        }
     }
 
 
-    private void drawSignal(){
-        double ntoms = nSamplesToSecond()*1000.0;
+    private void drawSignal() {
+        double ntoms = nSamplesToSecond() * 1000.0;
         double[] raws = controller.getRawSignal();
-        wavChart.drawChart("X","Y",0,(int)(raws.length*ntoms), raws);
+        wavChart.drawChart("X", "Y", 0, (int) (raws.length * ntoms), raws);
     }
 
-    private void process(int offset){
+    private void process(int offset) {
         controller.process(this, offset);
     }
 
-    public void onProcessReturn(java.util.List<double[]> result, int offset){
-        double ntotime = nSamplesToSecond()*1000.0;     //ms
+    public void onProcessReturn(boolean success, java.util.List<double[]> result, int offset) {
+        if(!success) return;
+
         //draw hamming
         double[] hamming = result.get(0);
-        hammingChart.drawChart("X","Y",(int)(offset*ntotime),
-                                (int)((offset+hamming.length)*ntotime),
-                                hamming);
+        int xmin=(int)sampleToXTime(offset);
+        int xmax =(int)sampleToXTime(offset+hamming.length);
+        hammingChart.drawChart("X", "Y", xmin,
+                xmax,
+                hamming);
+        lbHammingStatus.setText(String.format("Samples: %d to %d", offset, hamming.length+offset));
 
         double[] mresponse = result.get(1);
         double[] presponse = result.get(2);
 
-        magResponseChart.drawChart("X", "Y",0, (int)controller.getWav().getSampleRate(),mresponse);
-        phaseResponseChart.drawChart("X", "Y",0, (int)controller.getWav().getSampleRate(),presponse);
+        magResponseChart.drawChart("X", "Y", 0, (int) controller.getWav().getSampleRate(), mresponse);
+        phaseResponseChart.drawChart("X", "Y", 0, (int) controller.getWav().getSampleRate(), presponse);
 
+        wavChart.setCurrentPointer(offset);
     }
 
-    private double nSamplesToSecond(){
+    private double sampleToXTime(int value){
+        return value*nSamplesToSecond()*1000;   //ms
+    }
+
+    private int xTimeToSample(double value){
+        return (int)(value/(nSamplesToSecond()*1000));
+    }
+
+    private double nSamplesToSecond() {
         WavFile wav = controller.getWav();
-        double ntos = 1.0/wav.getSampleRate();
+        double ntos = 1.0 / wav.getSampleRate();
         return ntos;
     }
 
-    private double nSamplesToFrequency(double size){
+    private double nSamplesToFrequency(double size) {
         WavFile wav = controller.getWav();
-        double ntof = wav.getSampleRate()/size;
+        double ntof = wav.getSampleRate() / size;
         return ntof;
     }
 
+    private void setState(State state){
+        this.state = state;
+        switch (state){
+            case Normal:
+                btnPrev.setEnabled(true);
+                btnNext.setEnabled(true);
+                btnPlay.setText("Play");
+                break;
+            case Running:
+                btnPrev.setEnabled(false);
+                btnNext.setEnabled(false);
+                btnPlay.setText("Pause");
+                break;
+        }
+    }
+
+    public enum State{
+        Normal,
+        Running
+    }
 
 }

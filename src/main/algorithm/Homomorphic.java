@@ -20,6 +20,7 @@ public class Homomorphic {
     }
 
 
+
     public List<double[]> process(int offset) {
         List<double[]> result = new ArrayList<double[]>();
 
