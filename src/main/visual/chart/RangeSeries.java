@@ -4,7 +4,7 @@ package visual.chart;
  * Created by dung on 01/12/2016.
  */
 public class RangeSeries extends Series {
-    private int[] gaps = new int[]{1,5,10,50,100,500,1000};
+    private int[] def_gaps = new int[]{1,5,10,50,100,500,1000};
 
     public double min;
     public double max;
@@ -26,16 +26,29 @@ public class RangeSeries extends Series {
         }
         int nMaxLength = (int)Math.ceil((nmax-nmin)/(max - min)*maxLength);
 
-        float maxGap = gaps[gaps.length-1];
-
         //TODO kiem tra nMaxLength < 2
         double amount = (nmax - nmin)/nMaxLength;
+        boolean labelFloat = false;
+
+        float[] gaps=new float[def_gaps.length];
+        if(amount>1){
+            for(int i=0;i<def_gaps.length;i++)
+                gaps[i] = def_gaps[i];
+            labelFloat = false;
+        }else{
+            for(int i=0;i<def_gaps.length;i++)
+                gaps[i] = 1.0f/def_gaps[def_gaps.length-1-i];
+            labelFloat = true;
+        }
+        float maxGap = gaps[gaps.length-1];
+
         double scale = 1;
         // find gap
         while(amount > maxGap) {
             amount /= maxGap;
             scale*=maxGap;
         }
+
         // tim prototype gap >= amount/maxlength
         double tgap = amount;
         for(int i=0;i<gaps.length;i++){
@@ -61,7 +74,10 @@ public class RangeSeries extends Series {
             }
             values[index] = max;
             for(int i=0;i<values.length;i++){
-                labels[i] = String.format("%.0f", values[i]);
+                if(labelFloat)
+                    labels[i] = String.format("%.4f", values[i]);
+                else
+                    labels[i] = String.format("%.0f", values[i]);
             }
             return new SeriesLabels(labels, values);
 
@@ -82,7 +98,10 @@ public class RangeSeries extends Series {
             }
             values[nLabels-1]=max;
             for(int i=0;i<nLabels;i++){
-                labels[i] = String.format("%.0f", values[i]);
+                if(labelFloat)
+                    labels[i] = String.format("%.4f", values[i]);
+                else
+                    labels[i] = String.format("%.0f", values[i]);
             }
             return new SeriesLabels(labels, values);
         }
