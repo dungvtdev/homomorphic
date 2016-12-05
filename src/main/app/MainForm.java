@@ -50,15 +50,15 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
 
         initUI();
 
-        setState(State.Normal);
+        setState(State.Nothing);
 
-        //test
-        File file = new File("/home/dung/wavefile/A96.wav");
-        controller.openFile(file);
-        lbFileName.setText("File: " + file.getName());
-
-        drawSignal();
-        process(0);
+//        //test
+//        File file = new File("/home/dung/wavefile/A96.wav");
+//        controller.openFile(file);
+//        lbFileName.setText("File: " + file.getName());
+//
+//        drawSignal();
+//        process(0);
     }
 
     private void initUI() {
@@ -141,6 +141,9 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         menuBar.add(mhelp);
 
         mFileOpen.addActionListener((ActionEvent event) -> {
+            if(state==State.Normal)
+                return;
+
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.addChoosableFileFilter(new FileNameExtensionFilter("*.wav", "wav"));
             int returnVal = fileChooser.showOpenDialog(MainForm.this);
@@ -163,9 +166,12 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         });
 
         mToolSetting.addActionListener((ActionEvent event) -> {
+            if(state==State.Normal)
+                return;
             int cn = controller.homomorphic.cnSize;
+            int wndsize = controller.homomorphic.windowSize;
             float delay = controller.delayTime;
-            new SettingsForm(this, new SettingsForm.SettingModel(cn,delay), this);
+            new SettingsForm(this, new SettingsForm.SettingModel(cn, wndsize, delay), this);
         });
 
         mAbout.addActionListener((ActionEvent event) -> {
@@ -284,10 +290,12 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
 
         @Override
         public void paintComponent(Graphics g) {
+//            System.out.println("repaint");
+
             Graphics2D g2d = (Graphics2D) g;
             g2d.clearRect(0,0,getWidth(),getHeight());
             // draw chart to buffer
-            checkRedrawChartBuffer();
+            checkRedrawChartBuffer(getSize());
 
             // draw chart
             g2d.drawImage(buffer, 0, 0, null);
@@ -329,22 +337,27 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
             }
         }
 
-        private void checkRedrawChartBuffer() {
+        private void checkRedrawChartBuffer(Dimension size) {
             // draw chart to buffer
-            Dimension size = this.getSize();
-            if (buffer == null || buffer.getWidth() != size.width || buffer.getHeight() != size.height) {
+//            Dimension size = this.getSize();
+            if (orderRedrawChart || buffer == null || buffer.getWidth() != size.width || buffer.getHeight() != size.height) {
                 buffer = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
                 orderRedrawChart = true;
             }
 
             if (orderRedrawChart) {
                 Graphics2D gbuffer = buffer.createGraphics();
-                Color color = new Color(1.0f, 0.0f, 1.0f, 0.0f);
-                gbuffer.setColor(color);
-                gbuffer.fillRect(0, 0, size.width, size.height);
-                drawChartToGraphics(gbuffer);
+//                gbuffer.setColor(Color.white);
+//                gbuffer.fillRect(0, 0, size.width, size.height);
+//                gbuffer.setColor(Color.black);
+                drawChartToGraphics(gbuffer, size);
                 orderRedrawChart = false;
             }
+        }
+
+        public void drawChart(String xLabel, String yLabel, int xMin, int xMax, double[] series){
+            orderRedrawChart = true;
+            super.drawChart(xLabel, yLabel, xMin, xMax, series);
         }
 
         public void setCurrentPointer(int index){
@@ -384,16 +397,15 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
 
         public ChartPanel() {
             chart = new LineChart(null);
-            chart.setLineColor(Color.green);
+            chart.setLineColor(Color.GREEN);
             chart.setHorizontalGap(12);
         }
 
         @Override
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
-            System.out.println("repaint");
             Graphics2D g2d = (Graphics2D) g;
-            drawChartToGraphics(g2d);
+            drawChartToGraphics(g2d, getSize());
         }
 
         public void drawChart(String xLabel, String yLabel, int xMin, int xMax, double[] series) {
@@ -408,13 +420,13 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
             chart.setYSeries(ySeries);
         }
 
-        protected void drawChartToGraphics(Graphics2D g2d) {
+        protected void drawChartToGraphics(Graphics2D g2d, Dimension size) {
             RenderingHints rh = new RenderingHints(
                     RenderingHints.KEY_ANTIALIASING,
                     RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setRenderingHints(rh);
 
-            chart.setDrawSize(this.getSize());
+            chart.setDrawSize(size);
             chart.setGraphics2d(g2d);
             chart.draw();
         }
@@ -447,7 +459,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         double[] presponse = result.get(2);
 
         magResponseChart.drawChart("Frequency (Hz)", "Magnitude (dB)", 0, (int) controller.getWav().getSampleRate(), mresponse);
-        phaseResponseChart.drawChart("Frequency (Hz)", "Phase (P", 0, (int) controller.getWav().getSampleRate(), presponse);
+        phaseResponseChart.drawChart("Frequency (Hz)", "Phase (Radiance)", 0, (int) controller.getWav().getSampleRate(), presponse);
 
         // formants
         double[] formants = result.get(3);
@@ -465,6 +477,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
     @Override
     public void onCallback(SettingsForm.SettingModel setting) {
         controller.delayTime = setting.delay;
+        controller.homomorphic.windowSize = setting.windowsize;
         int cn = (setting.cn > controller.homomorphic.windowSize)?
                 controller.homomorphic.windowSize:
                 setting.cn;
@@ -474,6 +487,9 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
     }
 
     private double sampleToXTime(int value){
+        if(controller.homomorphic==null){
+            return 0;
+        }
         return value*controller.homomorphic.nSamplesToSecond()*1000;   //ms
     }
 
@@ -484,6 +500,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
     private void setState(State state){
         this.state = state;
         switch (state){
+            case Nothing:
             case Normal:
                 btnPrev.setEnabled(true);
                 btnNext.setEnabled(true);
@@ -498,6 +515,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
     }
 
     public enum State{
+        Nothing,
         Normal,
         Running
     }

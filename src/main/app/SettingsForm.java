@@ -18,11 +18,16 @@ public class SettingsForm extends JDialog {
 
         JLabel lb1 = new JLabel("C(n) size:");
         JTextField txt_cn = new JTextField("" +setting.cn);
+        JLabel lb3 = new JLabel("Windows Size:");
+        JTextField txt_wnd = new JTextField(String.format("%d",setting.windowsize));
         JLabel lb2 = new JLabel("Delay Run Time:");
         JTextField txt_delay = new JTextField(String.format("%.1f",setting.delay));
 
+
         root.add(lb1);
         root.add(txt_cn);
+        root.add(lb3);
+        root.add(txt_wnd);
         root.add(lb2);
         root.add(txt_delay);
 
@@ -30,8 +35,9 @@ public class SettingsForm extends JDialog {
         btnOk.addActionListener((ActionEvent event)->{
             try{
                 int cn = Integer.parseInt(txt_cn.getText());
+                int wndsize = Integer.parseInt(txt_wnd.getText());
                 float delay = Float.parseFloat(txt_delay.getText());
-                callback.onCallback(new SettingModel(cn,delay));
+                callback.onCallback(new SettingModel(cn,wndsize,delay));
                 setVisible(false);
                 this.dispose();
             }catch (NumberFormatException e){
@@ -47,7 +53,7 @@ public class SettingsForm extends JDialog {
         pack();
 
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        root.setLocation((screenSize.width - root.getPreferredSize().width) / 2,
+        setLocation((screenSize.width - root.getPreferredSize().width) / 2,
                 (screenSize.height - root.getPreferredSize().height) / 2);
 
         setVisible(true);
@@ -55,10 +61,12 @@ public class SettingsForm extends JDialog {
 
     public static class SettingModel{
         public int cn;
+        public int windowsize;
         public float delay;
 
-        public SettingModel(int cn, float delay){
+        public SettingModel(int cn, int windowsize, float delay){
             this.cn = cn;
+            this.windowsize = windowsize;
             this.delay = delay;
         }
     }

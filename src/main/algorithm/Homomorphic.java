@@ -76,7 +76,7 @@ public class Homomorphic {
         double[] presponse = new double[n];
         double log10e = Math.log10(Math.E);
         for(int i=0;i<n;i++){
-            presponse[i]=fceps[i][1]/(log10e*Math.PI);
+            presponse[i]=fceps[i][1]/log10e;
         }
         result.add(presponse);
 

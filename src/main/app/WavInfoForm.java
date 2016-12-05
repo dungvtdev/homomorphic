@@ -54,7 +54,7 @@ public class WavInfoForm extends JDialog implements ActionListener{
         pack();
 
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        root.setLocation((screenSize.width-root.getPreferredSize().width)/2,
+        setLocation((screenSize.width-root.getPreferredSize().width)/2,
                 (screenSize.height-root.getPreferredSize().height)/2);
 
         setVisible(true);

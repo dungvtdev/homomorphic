@@ -39,7 +39,7 @@ public class AboutForm extends JDialog implements ActionListener{
 
         root.setPreferredSize(new Dimension(360,200));
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        root.setLocation((screenSize.width-root.getPreferredSize().width)/2,
+        setLocation((screenSize.width-root.getPreferredSize().width)/2,
                 (screenSize.height-root.getPreferredSize().height)/2);
         setContentPane(root);
         pack();
