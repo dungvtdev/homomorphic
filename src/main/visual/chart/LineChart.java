@@ -56,27 +56,35 @@ public class LineChart {
                      Series xSeries, Series ySeries, Color lineColor){
 
         if(xSeries==null || ySeries==null || size==null ||lineColor==null){
-//            throw new InvalidParameterException("xSeries, ySeries, size, lineColor not set");
+            int width = size.width-40;
+            int height = size.height - 40;
+            Point origin = new Point(20,20+height);
+            g2d.setColor(Color.BLACK);
+            g2d.drawRect(origin.x,origin.y-height,width,height);
             return;
         }
-
-        int maxXLabels = 20;
-        int maxYLabels = 20;
-        Series.SeriesLabels xLabels = xSeries.getSeriesLabels(maxXLabels);
-        Series.SeriesLabels yLabels = ySeries.getSeriesLabels(maxYLabels);
-
-        int sliceHeight = 5;
 
         Font font = g2d.getFont();
         g2d.setFont(new Font(font.getFontName(), Font.PLAIN, 10));
 
         Stroke stroke = g2d.getStroke();
-        g2d.setStroke(new BasicStroke(2));
+        g2d.setStroke(new BasicStroke(1));
 
         Color oldLineColor = g2d.getColor();
-        g2d.setColor(Color.BLACK);
 
         FontMetrics metrics = g2d.getFontMetrics();
+
+
+
+
+        int maxXLabels = (size.width/metrics.stringWidth("00000"));
+        int maxYLabels = (int)(size.height/(1.5f*metrics.getHeight())-3);
+
+        Series.SeriesLabels xLabels = xSeries.getSeriesLabels(maxXLabels);
+        Series.SeriesLabels yLabels = ySeries.getSeriesLabels(maxYLabels);
+
+        int sliceHeight = 5;
+
         int textHeight = metrics.getHeight();
 
         int borderHeight = textHeight+6;
@@ -86,56 +94,16 @@ public class LineChart {
         }else{
             borderWidth = metrics.stringWidth(yLabels.labels[yLabels.labels.length-1]);
         }
+        borderWidth = Math.max(40,borderWidth);
+
         int axisNameSize = textHeight+6;
 
         int width = size.width - 2*borderWidth - axisNameSize;
         int height = size.height - 2*borderHeight - axisNameSize;
         Point origin = new Point(borderWidth+axisNameSize+5, height+borderHeight);
 
-        //draw axis and labels
-        g2d.drawRect(origin.x,origin.y-height,width,height);
-
-        // x
-//        double rootx = xLabels.series[0];
-//        ScaleRange scaleRangeX = new ScaleRange(xLabels.series[0],xLabels.series[xLabels.series.length-1], origin.x, origin.x+width);
-//        double v2px = width/(xSeries.getMax()-rootx);
-//        double v2px = scaleRangeX.getScale();
         ScaleRange scaleRangeX = xSeries.getScaleRange(origin.x, origin.x+width);
-
-        for(int i=0;i<xLabels.labels.length;i++){
-//            int x = (int)((xLabels.series[i]-rootx)*v2px+origin.x);
-            int x = (int) scaleRangeX.scaleValue(xLabels.series[i]);
-            g2d.drawLine(x,origin.y-height,x, origin.y-height+sliceHeight);
-            g2d.drawLine(x,origin.y,x, origin.y-sliceHeight);
-            int textWidth = metrics.stringWidth(xLabels.labels[i]);
-            g2d.drawString(xLabels.labels[i],x-textWidth/2,origin.y + textHeight+3);
-        }
-
-        // y
-//        double rooty= yLabels.series[0];
-//        ScaleRange scaleRangeY = new ScaleRange(yLabels.series[0],yLabels.series[yLabels.series.length-1], origin.y-horizontalGap, origin.y-height+horizontalGap);
-//        double v2py = (height-topGap)/(ySeries.getMax()-rooty);
         ScaleRange scaleRangeY = ySeries.getScaleRange(origin.y-horizontalGap, origin.y-height+horizontalGap);
-        for(int i=0;i<yLabels.labels.length;i++){
-//            int y = (int)(origin.y - (yLabels.series[i]-rooty)*v2py);
-            int y = (int) scaleRangeY.scaleValue(yLabels.series[i]);
-            g2d.drawLine(origin.x+width,y,origin.x+width-sliceHeight, y);
-            g2d.drawLine(origin.x,y,origin.x+sliceHeight, y);
-            int textWidth = metrics.stringWidth(yLabels.labels[i]);
-            g2d.drawString(yLabels.labels[i],origin.x-textWidth-3,y+textHeight/2);
-        }
-
-        // draw axis name
-        int nameWidth = metrics.stringWidth(xSeries.label);
-        g2d.drawString(xSeries.label,origin.x+(width-nameWidth)/2, origin.y+borderHeight+textHeight/2+5);
-
-        nameWidth = metrics.stringWidth(ySeries.label);
-        AffineTransform ori_at = g2d.getTransform();
-        AffineTransform at = new AffineTransform();
-        at.setToRotation(-Math.PI / 2.0, 0, 0);
-        g2d.setTransform(at);
-        g2d.drawString(ySeries.label, -height/2 - borderHeight-nameWidth/2, axisNameSize);
-        g2d.setTransform(ori_at);
 
         // draw data
         if(!(xSeries instanceof RangeSeries && ySeries instanceof ListSeries)) {
@@ -158,6 +126,73 @@ public class LineChart {
             px=ppx;
             py=ppy;
         }
+
+        //draw axis and labels
+        g2d.setColor(Color.BLACK);
+
+        g2d.drawRect(origin.x,origin.y-height,width,height);
+
+        // x
+//        double rootx = xLabels.series[0];
+//        ScaleRange scaleRangeX = new ScaleRange(xLabels.series[0],xLabels.series[xLabels.series.length-1], origin.x, origin.x+width);
+//        double v2px = width/(xSeries.getMax()-rootx);
+//        double v2px = scaleRangeX.getScale();
+
+        int xn = xLabels.labels.length;
+        for(int i=0;i< xn;i++){
+            if(i==0 && xn>1 &&
+                    (metrics.stringWidth(xLabels.labels[0])+metrics.stringWidth(xLabels.labels[1]))/2
+                            > scaleRangeX.getScale()*(xLabels.series[1] - xLabels.series[0])){
+                continue;
+            }
+            if(i==xn-1 && xn>1 &&
+                    (metrics.stringWidth(xLabels.labels[xn-1])+metrics.stringWidth(xLabels.labels[xn-2]))/2
+                            > scaleRangeX.getScale()* (xLabels.series[xn-1] - xLabels.series[xn-2])){
+                continue;
+            }
+//            int x = (int)((xLabels.series[i]-rootx)*v2px+origin.x);
+            int x = (int) scaleRangeX.scaleValue(xLabels.series[i]);
+            g2d.drawLine(x,origin.y-height,x, origin.y-height+sliceHeight);
+            g2d.drawLine(x,origin.y,x, origin.y-sliceHeight);
+            int textWidth = metrics.stringWidth(xLabels.labels[i]);
+            g2d.drawString(xLabels.labels[i],x-textWidth/2,origin.y + textHeight+3);
+        }
+
+        // y
+//        double rooty= yLabels.series[0];
+//        ScaleRange scaleRangeY = new ScaleRange(yLabels.series[0],yLabels.series[yLabels.series.length-1], origin.y-horizontalGap, origin.y-height+horizontalGap);
+//        double v2py = (height-topGap)/(ySeries.getMax()-rooty);
+        int yn = yLabels.labels.length;
+        double minGapYToDraw = Math.abs(metrics.getHeight()/scaleRangeY.getScale());
+        for(int i=0;i<yn;i++){
+            if(i==0 && yn>1 &&
+                    minGapYToDraw > (yLabels.series[1] - yLabels.series[0])){
+                continue;
+            }
+            if(i==yn-1 && yn>1 &&
+                    minGapYToDraw > (yLabels.series[yn-1] - yLabels.series[yn-2])){
+                continue;
+            }
+//            int y = (int)(origin.y - (yLabels.series[i]-rooty)*v2py);
+            int y = (int) scaleRangeY.scaleValue(yLabels.series[i]);
+            g2d.drawLine(origin.x+width,y,origin.x+width-sliceHeight, y);
+            g2d.drawLine(origin.x,y,origin.x+sliceHeight, y);
+            int textWidth = metrics.stringWidth(yLabels.labels[i]);
+            g2d.drawString(yLabels.labels[i],origin.x-textWidth-3,y+textHeight/2);
+        }
+
+        // draw axis name
+        int nameWidth = metrics.stringWidth(xSeries.label);
+        g2d.drawString(xSeries.label,origin.x+(width-nameWidth)/2, origin.y+borderHeight+textHeight/2+5);
+
+        nameWidth = metrics.stringWidth(ySeries.label);
+        AffineTransform ori_at = g2d.getTransform();
+        AffineTransform at = new AffineTransform();
+        at.setToRotation(-Math.PI / 2.0, 0, 0);
+        g2d.setTransform(at);
+        g2d.drawString(ySeries.label, -height/2 - borderHeight-nameWidth/2, axisNameSize);
+        g2d.setTransform(ori_at);
+
 
         g2d.setColor(oldLineColor);
         g2d.setStroke(stroke);
