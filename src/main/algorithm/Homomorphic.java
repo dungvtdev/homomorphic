@@ -1,6 +1,7 @@
 package algorithm;
 
 import app.Controller;
+import io.file.WavFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,12 +15,22 @@ public class Homomorphic {
 
     public int windowSize=512;
     public int cnSize=19;
+    public int sampleRate=1;
 
-    public Homomorphic(double[] samples) {
+    public Homomorphic(double[] samples, int sampleRate) {
         this.raws = samples;
+        this.sampleRate = sampleRate;
     }
 
+    public double nSamplesToSecond() {
+        double ntos = 1.0 / sampleRate;
+        return ntos;
+    }
 
+    public double nSamplesToFrequency(double size) {
+        double ntof = sampleRate / size;
+        return ntof;
+    }
 
     public List<double[]> process(int offset) {
         List<double[]> result = new ArrayList<double[]>();
@@ -49,8 +60,15 @@ public class Homomorphic {
 
         // mag response
         double[] mresponse = new double[n];
+        double max = Math.pow(10.0, fceps[0][0]);
         for(int i=0;i<n;i++){
             mresponse[i] = Math.pow(10.0, fceps[i][0]);
+            if(max<mresponse[i])
+                max = mresponse[i];
+        }
+        // to dB
+        for(int i=0;i<n;i++){
+            mresponse[i] = 20*Math.log10(mresponse[i]/max);
         }
         result.add(mresponse);
 
@@ -58,9 +76,28 @@ public class Homomorphic {
         double[] presponse = new double[n];
         double log10e = Math.log10(Math.E);
         for(int i=0;i<n;i++){
-            presponse[i]=fceps[i][1]/log10e;
+            presponse[i]=fceps[i][1]/(log10e*Math.PI);
         }
         result.add(presponse);
+
+        // formant
+        int nFormant = 0;
+        double[] fms= new double[5];
+        for(int i=1;i<n/2;i++){
+            if ((mresponse[i] > mresponse[i + 1]) & (mresponse[i] > mresponse[i - 1]))
+            {
+                fms[nFormant]=i*sampleRate/windowSize;
+                nFormant++;
+                if(nFormant>=5) break;
+            }
+        }
+        if(nFormant<fms.length){
+            double[] f = new double[nFormant];
+            for(int i=0;i<nFormant;i++)
+                f[i]=fms[i];
+            fms = f;
+        }
+        result.add(fms);
 
         return result;
     }

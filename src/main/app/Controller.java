@@ -21,7 +21,7 @@ public class Controller{
     public Homomorphic homomorphic;
     private int currentOffset;
 
-    private float delayTime=3;
+    public float delayTime=2;
     private RunThread runThread;
 
     public void setWindowSize(int wndSize){homomorphic.windowSize = wndSize;}
@@ -54,7 +54,7 @@ public class Controller{
             wav.close();
             wav.display();
 
-            homomorphic = new Homomorphic(samples);
+            homomorphic = new Homomorphic(samples, (int)wav.getSampleRate());
 
         }catch (IOException e){
             System.out.println("Loi khong mo duoc file");

@@ -75,6 +75,7 @@ public class WavFile
 		return validBits;
 	}
 
+
 	public static WavFile newWavFile(File file, int numChannels, long numFrames, int validBits, long sampleRate) throws IOException, WavFileException
 	{
 		// Instantiate new Wavfile and initialise
@@ -695,6 +696,16 @@ public class WavFile
 		out.printf("IO State: %s\n", ioState);
 		out.printf("Sample Rate: %d, Block Align: %d\n", sampleRate, blockAlign);
 		out.printf("Valid Bits: %d, Bytes per sample: %d\n", validBits, bytesPerSample);
+	}
+
+	public void displayHtml(PrintStream out){
+		out.print("<html>");
+		out.printf("File: %s<br>", file);
+		out.printf("Channels: %d, Frames: %d<br>", numChannels, numFrames);
+		out.printf("IO State: %s<br>", ioState);
+		out.printf("Sample Rate: %d, Block Align: %d<br>", sampleRate, blockAlign);
+		out.printf("Valid Bits: %d, Bytes per sample: %d<br>", validBits, bytesPerSample);
+		out.print("</html>");
 	}
 
 	public static void main(String[] args)

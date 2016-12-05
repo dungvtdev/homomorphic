@@ -24,7 +24,8 @@ import java.util.zip.GZIPOutputStream;
 /**
  * Created by dung on 01/12/2016.
  */
-public class MainForm extends JFrame implements HomomorphicProcessListener {
+public class MainForm extends JFrame implements HomomorphicProcessListener,
+        CallbackListener<SettingsForm.SettingModel> {
 
     private Controller controller;
     private JLabel lbFileName;
@@ -33,7 +34,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
     private ChartPanel magResponseChart;
     private ChartPanel phaseResponseChart;
     private JLabel lbHammingStatus;
-
+    private JLabel lbFormants;
     private JButton btnPrev;
     private JButton btnPlay;
     private JButton btnNext;
@@ -158,15 +159,17 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
         });
 
         mToolFileInfo.addActionListener((ActionEvent event) -> {
-
+            new WavInfoForm(this,"Wav File Info",controller.wav);
         });
 
         mToolSetting.addActionListener((ActionEvent event) -> {
-
+            int cn = controller.homomorphic.cnSize;
+            float delay = controller.delayTime;
+            new SettingsForm(this, new SettingsForm.SettingModel(cn,delay), this);
         });
 
         mAbout.addActionListener((ActionEvent event) -> {
-
+            new AboutForm(this);
         });
 
         return menuBar;
@@ -260,8 +263,11 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
 
     private Container createInOutPane() {
         Box parent = Box.createVerticalBox();
+        parent.createHorizontalGlue();
         JLabel lb = new JLabel("Formant");
+        lbFormants = new JLabel("");
         parent.add(lb);
+        parent.add(lbFormants);
         parent.setPreferredSize(new Dimension(colSizes[0], 300));
         return parent;
     }
@@ -403,24 +409,28 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
         }
 
         protected void drawChartToGraphics(Graphics2D g2d) {
+            RenderingHints rh = new RenderingHints(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setRenderingHints(rh);
+
             chart.setDrawSize(this.getSize());
             chart.setGraphics2d(g2d);
             chart.draw();
         }
-
     }
 
-
     private void drawSignal() {
-        double ntoms = nSamplesToSecond() * 1000.0;
         double[] raws = controller.getRawSignal();
-        wavChart.drawChart("X", "Y", 0, (int) (raws.length * ntoms), raws);
+        int max = (int)sampleToXTime(raws.length);
+        wavChart.drawChart("Time (ms)", "Amplitude", 0, max, raws);
     }
 
     private void process(int offset) {
         controller.process(this, offset);
     }
 
+    @Override
     public void onProcessReturn(boolean success, java.util.List<double[]> result, int offset) {
         if(!success) return;
 
@@ -428,7 +438,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
         double[] hamming = result.get(0);
         int xmin=(int)sampleToXTime(offset);
         int xmax =(int)sampleToXTime(offset+hamming.length);
-        hammingChart.drawChart("X", "Y", xmin,
+        hammingChart.drawChart("Time (ms)", "Amplitude", xmin,
                 xmax,
                 hamming);
         lbHammingStatus.setText(String.format("Samples: %d to %d", offset, hamming.length+offset));
@@ -436,30 +446,39 @@ public class MainForm extends JFrame implements HomomorphicProcessListener {
         double[] mresponse = result.get(1);
         double[] presponse = result.get(2);
 
-        magResponseChart.drawChart("X", "Y", 0, (int) controller.getWav().getSampleRate(), mresponse);
-        phaseResponseChart.drawChart("X", "Y", 0, (int) controller.getWav().getSampleRate(), presponse);
+        magResponseChart.drawChart("Frequency (Hz)", "Magnitude (dB)", 0, (int) controller.getWav().getSampleRate(), mresponse);
+        phaseResponseChart.drawChart("Frequency (Hz)", "Phase (P", 0, (int) controller.getWav().getSampleRate(), presponse);
 
+        // formants
+        double[] formants = result.get(3);
+        StringBuilder str = new StringBuilder();
+        str.append("<html>");
+        for(int i=0;i<formants.length;i++){
+            str.append("F["+(i+1)+"] = "+(int)formants[i]+"<br>");
+        }
+        str.append("</html>");
+        lbFormants.setText(str.toString());
         wavChart.setCurrentPointer(offset);
     }
 
+    // when SettingsForm callback
+    @Override
+    public void onCallback(SettingsForm.SettingModel setting) {
+        controller.delayTime = setting.delay;
+        int cn = (setting.cn > controller.homomorphic.windowSize)?
+                controller.homomorphic.windowSize:
+                setting.cn;
+        controller.homomorphic.cnSize = cn;
+
+        process(controller.getOffset());
+    }
+
     private double sampleToXTime(int value){
-        return value*nSamplesToSecond()*1000;   //ms
+        return value*controller.homomorphic.nSamplesToSecond()*1000;   //ms
     }
 
     private int xTimeToSample(double value){
-        return (int)(value/(nSamplesToSecond()*1000));
-    }
-
-    private double nSamplesToSecond() {
-        WavFile wav = controller.getWav();
-        double ntos = 1.0 / wav.getSampleRate();
-        return ntos;
-    }
-
-    private double nSamplesToFrequency(double size) {
-        WavFile wav = controller.getWav();
-        double ntof = wav.getSampleRate() / size;
-        return ntof;
+        return (int)(value/(controller.homomorphic.nSamplesToSecond()*1000));
     }
 
     private void setState(State state){
