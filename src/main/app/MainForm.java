@@ -52,13 +52,13 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
 
         setState(State.Nothing);
 
-//        //test
-//        File file = new File("/home/dung/wavefile/A96.wav");
-//        controller.openFile(file);
-//        lbFileName.setText("File: " + file.getName());
-//
-//        drawSignal();
-//        process(0);
+        //test
+        File file = new File("/home/dung/wavefile/Xe.wav");
+        controller.openFile(file);
+        lbFileName.setText("File: " + file.getName());
+
+        drawSignal();
+        process(0);
     }
 
     private void initUI() {
@@ -417,7 +417,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
             Series xSeries = new RangeSeries(xLabel, xMin, xMax);
             Series ySeries = new ListSeries(yLabel, series);
             chart.setXSeriers(xSeries);
-            chart.setYSeries(ySeries);
+            chart.setySeries(ySeries);
         }
 
         protected void drawChartToGraphics(Graphics2D g2d, Dimension size) {

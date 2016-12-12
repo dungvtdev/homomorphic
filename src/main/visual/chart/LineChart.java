@@ -5,7 +5,8 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by dung on 01/12/2016.
@@ -14,7 +15,7 @@ public class LineChart {
     private Graphics2D g2d;
     private Dimension size;
     private Series xSeries;
-    private Series ySeries;
+    private List<Series> ySeries;
     private int horizontalGap;
     private Color lineColor;
 
@@ -22,14 +23,22 @@ public class LineChart {
     private ScaleRange yRange;
 
     public LineChart(Graphics2D g2d){
+        ySeries = new ArrayList<Series>();
         setGraphics2d(g2d);
     }
 
     public void setGraphics2d(Graphics2D g2d){this.g2d = g2d;}
 
-    public void setYSeries(Series series){
-        this.ySeries = series;
+    public void addYSeries(Series series){
+        this.ySeries.add(series);
     }
+
+    public void setySeries(Series series){
+        removeySeries();
+        addYSeries(series);
+    }
+
+    public void removeySeries(){this.ySeries.clear();}
 
     public void setXSeriers(Series series){
         this.xSeries = series;
@@ -52,10 +61,31 @@ public class LineChart {
         draw(g2d, size, horizontalGap, xSeries, ySeries, lineColor);
     }
 
-    public void draw(Graphics2D g2d, Dimension size, int horizontalGap,
-                     Series xSeries, Series ySeries, Color lineColor){
+    protected void drawData(Graphics2D g2d, Series xSeries, List<Series> ySeries, ScaleRange scaleRangeX, ScaleRange scaleRangeY){
+        for(Series s : ySeries) {
+            ListSeries ys = (ListSeries)s;
+            double[] series = ys.getSeries();
+            int length = series.length;
+            double xVal = xSeries.getMin();
+            double xStep = (xSeries.getMax() - xSeries.getMin()) / length;
+            int px = (int) scaleRangeX.scaleValue(xSeries.getMin());
+            int py = (int) scaleRangeY.scaleValue(series[0]);
+            int ppx, ppy;
+            for (int i = 1; i < length; i++) {
+                xVal += xStep;
+                ppx = (int) scaleRangeX.scaleValue(xVal);
+                ppy = (int) scaleRangeY.scaleValue(series[i]);
+                g2d.drawLine(px, py, ppx, ppy);
+                px = ppx;
+                py = ppy;
+            }
+        }
+    }
 
-        if(xSeries==null || ySeries==null || size==null ||lineColor==null){
+    public void draw(Graphics2D g2d, Dimension size, int horizontalGap,
+                     Series xSeries, List<Series> ySeries, Color lineColor){
+
+        if(xSeries==null || ySeries==null || ySeries.size() == 0 || size==null ||lineColor==null){
             int width = size.width-40;
             int height = size.height - 40;
             Point origin = new Point(20,20+height);
@@ -81,7 +111,15 @@ public class LineChart {
         int maxYLabels = (int)(size.height/(1.5f*metrics.getHeight())-3);
 
         Series.SeriesLabels xLabels = xSeries.getSeriesLabels(maxXLabels);
-        Series.SeriesLabels yLabels = ySeries.getSeriesLabels(maxYLabels);
+
+        double ymin_t = ySeries.get(0).getMin();
+        double ymax_t = ySeries.get(0).getMax();
+        for(Series s : ySeries){
+            if(ymax_t < s.getMax()) ymax_t=s.getMax();
+            if(ymin_t > s.getMin()) ymin_t=s.getMin();
+        }
+        Series t_ySeries = new RangeSeries(ySeries.get(0).label,ymin_t,ymax_t);
+        Series.SeriesLabels yLabels = t_ySeries.getSeriesLabels(maxYLabels);
 
         int sliceHeight = 5;
 
@@ -103,29 +141,32 @@ public class LineChart {
         Point origin = new Point(borderWidth+axisNameSize+5, height+borderHeight);
 
         ScaleRange scaleRangeX = xSeries.getScaleRange(origin.x, origin.x+width);
-        ScaleRange scaleRangeY = ySeries.getScaleRange(origin.y-horizontalGap, origin.y-height+horizontalGap);
+        ScaleRange scaleRangeY = t_ySeries.getScaleRange(origin.y-horizontalGap, origin.y-height+horizontalGap);
 
         // draw data
-        if(!(xSeries instanceof RangeSeries && ySeries instanceof ListSeries)) {
-            throw new NotImplementedException();
+        if(!(xSeries instanceof RangeSeries)) {
+            for(Series y : ySeries)
+                if(!(y instanceof ListSeries))
+                    throw new NotImplementedException();
         }
 
         g2d.setColor(lineColor);
-        double[] series = ((ListSeries) ySeries).getSeries();
-        int length = series.length;
-        double xVal = xSeries.getMin();
-        double xStep = (xSeries.getMax() - xSeries.getMin())/length;
-        int px = (int)scaleRangeX.scaleValue(xSeries.getMin());
-        int py = (int)scaleRangeY.scaleValue(series[0]);
-        int ppx, ppy;
-        for(int i=1;i<length;i++){
-            xVal+=xStep;
-            ppx = (int)scaleRangeX.scaleValue(xVal);
-            ppy = (int)scaleRangeY.scaleValue(series[i]);
-            g2d.drawLine(px,py,ppx,ppy);
-            px=ppx;
-            py=ppy;
-        }
+        drawData(g2d,xSeries,ySeries,scaleRangeX,scaleRangeY);
+//        double[] series = ((ListSeries) ySeries).getSeries();
+//        int length = series.length;
+//        double xVal = xSeries.getMin();
+//        double xStep = (xSeries.getMax() - xSeries.getMin())/length;
+//        int px = (int)scaleRangeX.scaleValue(xSeries.getMin());
+//        int py = (int)scaleRangeY.scaleValue(series[0]);
+//        int ppx, ppy;
+//        for(int i=1;i<length;i++){
+//            xVal+=xStep;
+//            ppx = (int)scaleRangeX.scaleValue(xVal);
+//            ppy = (int)scaleRangeY.scaleValue(series[i]);
+//            g2d.drawLine(px,py,ppx,ppy);
+//            px=ppx;
+//            py=ppy;
+//        }
 
         //draw axis and labels
         g2d.setColor(Color.BLACK);
@@ -185,12 +226,12 @@ public class LineChart {
         int nameWidth = metrics.stringWidth(xSeries.label);
         g2d.drawString(xSeries.label,origin.x+(width-nameWidth)/2, origin.y+borderHeight+textHeight/2+5);
 
-        nameWidth = metrics.stringWidth(ySeries.label);
+        nameWidth = metrics.stringWidth(t_ySeries.label);
         AffineTransform ori_at = g2d.getTransform();
         AffineTransform at = new AffineTransform();
         at.setToRotation(-Math.PI / 2.0, 0, 0);
         g2d.setTransform(at);
-        g2d.drawString(ySeries.label, -height/2 - borderHeight-nameWidth/2, axisNameSize);
+        g2d.drawString(t_ySeries.label, -height/2 - borderHeight-nameWidth/2, axisNameSize);
         g2d.setTransform(ori_at);
 
 

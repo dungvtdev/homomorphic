@@ -17,6 +17,9 @@ public class Homomorphic {
     public int cnSize=19;
     public int sampleRate=1;
 
+    public double zcrThreshold=1000;
+    public double powerThreshold=1;
+
     public Homomorphic(double[] samples, int sampleRate) {
         this.raws = samples;
         this.sampleRate = sampleRate;
@@ -32,7 +35,12 @@ public class Homomorphic {
         return ntof;
     }
 
-    public List<double[]> process(int offset) {
+    public List<double[]> process(int offset, boolean formantOnly) {
+        boolean signalHasF0 = hasF0(raws, offset, windowSize);
+        if(formantOnly && !signalHasF0){
+            return null;
+        }
+
         List<double[]> result = new ArrayList<double[]>();
 
         // adjust
@@ -82,22 +90,24 @@ public class Homomorphic {
 
         // formant
         int nFormant = 0;
-        double[] fms= new double[5];
-        for(int i=1;i<n/2;i++){
-            if ((mresponse[i] > mresponse[i + 1]) & (mresponse[i] > mresponse[i - 1]))
-            {
-                fms[nFormant]=i*sampleRate/windowSize;
-                nFormant++;
-                if(nFormant>=5) break;
+        double[] fms = new double[5];
+
+        if(signalHasF0) {
+            for (int i = 1; i < n / 2; i++) {
+                if ((mresponse[i] > mresponse[i + 1]) & (mresponse[i] > mresponse[i - 1])) {
+                    fms[nFormant] = i * sampleRate / windowSize;
+                    nFormant++;
+                    if (nFormant >= 5) break;
+                }
             }
+            if (nFormant < fms.length) {
+                double[] f = new double[nFormant];
+                for (int i = 0; i < nFormant; i++)
+                    f[i] = fms[i];
+                fms = f;
+            }
+            result.add(fms);
         }
-        if(nFormant<fms.length){
-            double[] f = new double[nFormant];
-            for(int i=0;i<nFormant;i++)
-                f[i]=fms[i];
-            fms = f;
-        }
-        result.add(fms);
 
         return result;
     }
@@ -159,6 +169,19 @@ public class Homomorphic {
             numbers[i][0] = Math.log10(m);
             numbers[i][1] = log10e*p;
         }
+    }
+
+    private boolean hasF0(double[] sample, int offset, int size){
+        double zcr = 0, power=0;
+        int n = Math.min(sample.length, offset+size);
+        power=sample[offset]*sample[offset];
+        for(int i=offset+1;i<n;i++){
+            if((sample[i-1] < 0 && sample[i]>0) ||(sample[i-1]>0 && sample[i]<0)){
+                zcr+=1;
+            }
+            power+=sample[i]*sample[i];
+        }
+        return zcr<=zcrThreshold && power>=powerThreshold;
     }
 
     private double moduleComplex(double[] complex){

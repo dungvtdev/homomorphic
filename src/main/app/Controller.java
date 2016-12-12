@@ -107,7 +107,7 @@ public class Controller{
 
     public boolean process(HomomorphicProcessListener listener, int offset){
         currentOffset = offset;
-        List<double[]> result = homomorphic.process(offset);
+        List<double[]> result = homomorphic.process(offset, false);
         listener.onProcessReturn(true,result, offset);
         return true;
     }
