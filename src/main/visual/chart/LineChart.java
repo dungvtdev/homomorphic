@@ -63,21 +63,40 @@ public class LineChart {
 
     protected void drawData(Graphics2D g2d, Series xSeries, List<Series> ySeries, ScaleRange scaleRangeX, ScaleRange scaleRangeY){
         for(Series s : ySeries) {
-            ListSeries ys = (ListSeries)s;
-            double[] series = ys.getSeries();
-            int length = series.length;
-            double xVal = xSeries.getMin();
-            double xStep = (xSeries.getMax() - xSeries.getMin()) / length;
-            int px = (int) scaleRangeX.scaleValue(xSeries.getMin());
-            int py = (int) scaleRangeY.scaleValue(series[0]);
-            int ppx, ppy;
-            for (int i = 1; i < length; i++) {
-                xVal += xStep;
-                ppx = (int) scaleRangeX.scaleValue(xVal);
-                ppy = (int) scaleRangeY.scaleValue(series[i]);
-                g2d.drawLine(px, py, ppx, ppy);
-                px = ppx;
-                py = ppy;
+            if(s instanceof XYListSeries){
+                XYListSeries ys = (XYListSeries)s;
+                double[] series = ys.getSeries();
+                int length = series.length;
+                double[] xseries = ys.anchorSeries;
+
+                int px = (int) scaleRangeX.scaleValue(xseries[0]);
+                int py = (int) scaleRangeY.scaleValue(series[0]);
+                int ppx, ppy;
+                for (int i = 1; i < length; i++) {
+                    ppx = (int) scaleRangeX.scaleValue(xseries[i]);
+                    ppy = (int) scaleRangeY.scaleValue(series[i]);
+                    g2d.drawLine(px, py, ppx, ppy);
+                    px = ppx;
+                    py = ppy;
+                }
+            }else {
+                ListSeries ys = (ListSeries)s;
+                double[] series = ys.getSeries();
+                int length = series.length;
+
+                double xVal = xSeries.getMin();
+                double xStep = (xSeries.getMax() - xSeries.getMin()) / length;
+                int px = (int) scaleRangeX.scaleValue(xSeries.getMin());
+                int py = (int) scaleRangeY.scaleValue(series[0]);
+                int ppx, ppy;
+                for (int i = 1; i < length; i++) {
+                    xVal += xStep;
+                    ppx = (int) scaleRangeX.scaleValue(xVal);
+                    ppy = (int) scaleRangeY.scaleValue(series[i]);
+                    g2d.drawLine(px, py, ppx, ppy);
+                    px = ppx;
+                    py = ppy;
+                }
             }
         }
     }

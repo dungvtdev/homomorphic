@@ -17,8 +17,8 @@ public class Homomorphic {
     public int cnSize=19;
     public int sampleRate=1;
 
-    public double zcrThreshold=1000;
-    public double powerThreshold=1;
+    public double zcrThreshold=125;
+    public double powerThreshold=0.1;
 
     public Homomorphic(double[] samples, int sampleRate) {
         this.raws = samples;
@@ -35,6 +35,22 @@ public class Homomorphic {
         return ntof;
     }
 
+    public double[][] getAllFormants(){
+        int n=raws.length/(windowSize/2);
+        double[][] result = new double[n][];
+        int offset=0;
+        for(int i=0;i<n;i++){
+            List<double[]> r = process(offset, true);
+            if(r!=null) {
+                result[i] = r.get(0);
+            }else{
+                result[i]=null;
+            }
+            offset+=windowSize/2;
+        }
+        return result;
+    }
+
     public List<double[]> process(int offset, boolean formantOnly) {
         boolean signalHasF0 = hasF0(raws, offset, windowSize);
         if(formantOnly && !signalHasF0){
@@ -48,7 +64,7 @@ public class Homomorphic {
 
         // hamming
         hammingFilter(samples);
-        result.add(samples);              // return hamming, chua copy
+//        result.add(samples);              // return hamming, chua copy
 
         // FFT, log, FFT-1
         double[][] complexSamples = realToComplex(samples);
@@ -78,7 +94,7 @@ public class Homomorphic {
         for(int i=0;i<n;i++){
             mresponse[i] = 20*Math.log10(mresponse[i]/max);
         }
-        result.add(mresponse);
+//        result.add(mresponse);
 
         // phase response
         double[] presponse = new double[n];
@@ -86,13 +102,14 @@ public class Homomorphic {
         for(int i=0;i<n;i++){
             presponse[i]=fceps[i][1]/log10e;
         }
-        result.add(presponse);
+//        result.add(presponse);
 
         // formant
         int nFormant = 0;
-        double[] fms = new double[5];
+        double[] fms=null;
 
         if(signalHasF0) {
+            fms = new double[5];
             for (int i = 1; i < n / 2; i++) {
                 if ((mresponse[i] > mresponse[i + 1]) & (mresponse[i] > mresponse[i - 1])) {
                     fms[nFormant] = i * sampleRate / windowSize;
@@ -106,8 +123,15 @@ public class Homomorphic {
                     f[i] = fms[i];
                 fms = f;
             }
-            result.add(fms);
+//            result.add(fms);
         }
+
+        if(!formantOnly){
+            result.add(samples);              // return hamming, chua copy
+            result.add(mresponse);
+            result.add(presponse);
+        }
+        result.add(fms);
 
         return result;
     }
@@ -181,6 +205,8 @@ public class Homomorphic {
             }
             power+=sample[i]*sample[i];
         }
+        power/=1E10;
+        System.out.println("ZCR "+zcr+" power "+power);
         return zcr<=zcrThreshold && power>=powerThreshold;
     }
 

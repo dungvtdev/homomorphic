@@ -74,6 +74,11 @@ public class Controller{
         loadWav(file);
     }
 
+    public double[][] processFormants(){
+        double[][] fms = homomorphic.getAllFormants();
+        return fms;
+    }
+
     public boolean processNext(HomomorphicProcessListener listener){
         int offset = nextProcessIndex();
         if(offset<0){
