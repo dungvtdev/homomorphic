@@ -60,12 +60,12 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
 
         setState(State.Nothing);
 
-        //test
-        File file = new File("/home/dung/wavefile/Xe.wav");
-        controller.openFile(file);
-        lbFileName.setText("File: " + file.getName());
+//        //test
+//        File file = new File("/home/dung/wavefile/Xe.wav");
+//        controller.openFile(file);
+//        lbFileName.setText("File: " + file.getName());
 
-        processFirst(0);
+//        processFirst(0);
     }
 
     private void processFirst(int offset){
@@ -236,8 +236,11 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         });
 
         toolpane.add(btnPrev);
+        toolpane.add(Box.createRigidArea(new Dimension(10,0)));
         toolpane.add(btnPlay);
+        toolpane.add(Box.createRigidArea(new Dimension(10,0)));
         toolpane.add(btnNext);
+        toolpane.add(Box.createRigidArea(new Dimension(10,0)));
         toolpane.add(lbHammingStatus);
 
         pane.add(lb);
@@ -316,44 +319,50 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
     private Container createParamsPanel() {
         JLabel lb = new JLabel("Params:");
 
-        JPanel parent = new JPanel();
-        parent.setLayout(new BoxLayout(parent, BoxLayout.PAGE_AXIS));
+//        JPanel parent = new JPanel();
+//        parent.setLayout(new BoxLayout(parent, BoxLayout.PAGE_AXIS));
+        Box parent = Box.createVerticalBox();
 
         Box vBox = Box.createVerticalBox();
-        vBox.add(Box.createVerticalGlue());
 
         vBox.add(new JLabel("Window Size:"));
         tWndSize = new JTextField();
-        tWndSize.setMaximumSize(new Dimension(1000,100));
+//        tWndSize.setMaximumSize(new Dimension(1000,100));
         vBox.add(tWndSize);
 
         vBox.add(new JLabel("Cn Size:"));
         tCnSize = new JTextField();
-        tCnSize.setMaximumSize(new Dimension(1000,100));
+//        tCnSize.setMaximumSize(new Dimension(1000,100));
         vBox.add(tCnSize);
 
         vBox.add(new JLabel("Zrc Threshold:"));
         tZcrThreshold = new JTextField();
-        tZcrThreshold.setMaximumSize(new Dimension(1000,100));
+//        tZcrThreshold.setMaximumSize(new Dimension(1000,100));
         vBox.add(tZcrThreshold);
 
         vBox.add(new JLabel("Power Threshold:"));
         tPowerThreshold = new JTextField();
-        tPowerThreshold.setMaximumSize(new Dimension(1000,100));
+//        tPowerThreshold.setMaximumSize(new Dimension(1000,100));
         vBox.add(tPowerThreshold);
 
+        vBox.setMaximumSize(new Dimension(1000,500));
 //        vBox.add(Box.createRigidArea(new Dimension(1000,300)));
 
         Box hBox = Box.createHorizontalBox();
         JButton btnSubmit = new JButton("Apply");
         JButton btnReset = new JButton("Reset");
         hBox.add(btnReset);
+        hBox.add(Box.createRigidArea(new Dimension(10,0)));
         hBox.add(btnSubmit);
 
         parent.add(lb);
-        parent.add(Box.createVerticalGlue());
+        parent.add(Box.createRigidArea(new Dimension(0,10)));
         parent.add(vBox);
+        parent.add(Box.createRigidArea(new Dimension(0,10)));
         parent.add(hBox);
+        parent.add(Box.createVerticalGlue());
+        parent.add(Box.createRigidArea(new Dimension(0,10)));
+
 //        parent.add(new Box.Filler(new Dimension(0,100), new Dimension(0,1000), new Dimension(0,1000)));
 
         btnSubmit.addActionListener((ActionEvent e)->{
@@ -581,6 +590,8 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g;
+            g2d.setColor(Color.white);
+            g2d.fillRect(0,0,this.getWidth(), this.getHeight());
             drawChartToGraphics(g2d, getSize());
         }
 
@@ -597,10 +608,10 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         }
 
         protected void drawChartToGraphics(Graphics2D g2d, Dimension size) {
-            RenderingHints rh = new RenderingHints(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setRenderingHints(rh);
+//            RenderingHints rh = new RenderingHints(
+//                    RenderingHints.KEY_ANTIALIASING,
+//                    RenderingHints.VALUE_ANTIALIAS_ON);
+//            g2d.setRenderingHints(rh);
 
             chart.setDrawSize(size);
             chart.setGraphics2d(g2d);
@@ -636,7 +647,8 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
 
     @Override
     public void onProcessReturn(boolean success, java.util.List<double[]> result, int offset) {
-        if (!success) return;
+        if (!success)
+            return;
 
         //draw hamming
         double[] hamming = result.get(0);
@@ -665,9 +677,9 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
             }
             str.append("</html>");
             lbFormants.setText(str.toString());
-            wavChart.setCurrentPointer(offset);
-            formantChart.setCurrentPointer(offset);
         }
+        wavChart.setCurrentPointer(offset);
+        formantChart.setCurrentPointer(offset);
     }
 
     // when SettingsForm callback

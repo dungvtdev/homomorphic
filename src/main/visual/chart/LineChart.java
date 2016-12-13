@@ -151,7 +151,7 @@ public class LineChart {
         }else{
             borderWidth = metrics.stringWidth(yLabels.labels[yLabels.labels.length-1]);
         }
-        borderWidth = Math.max(40,borderWidth);
+        borderWidth = Math.max(20,borderWidth);
 
         int axisNameSize = textHeight+6;
 
@@ -168,6 +168,9 @@ public class LineChart {
                 if(!(y instanceof ListSeries))
                     throw new NotImplementedException();
         }
+
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(origin.x,origin.y-height,width,height);
 
         g2d.setColor(lineColor);
         drawData(g2d,xSeries,ySeries,scaleRangeX,scaleRangeY);
@@ -188,7 +191,7 @@ public class LineChart {
 //        }
 
         //draw axis and labels
-        g2d.setColor(Color.BLACK);
+        g2d.setColor(Color.GRAY);
 
         g2d.drawRect(origin.x,origin.y-height,width,height);
 
@@ -211,9 +214,11 @@ public class LineChart {
                 continue;
             }
 //            int x = (int)((xLabels.series[i]-rootx)*v2px+origin.x);
+            g2d.setColor(Color.GRAY);
             int x = (int) scaleRangeX.scaleValue(xLabels.series[i]);
             g2d.drawLine(x,origin.y-height,x, origin.y-height+sliceHeight);
             g2d.drawLine(x,origin.y,x, origin.y-sliceHeight);
+            g2d.setColor(Color.BLACK);
             int textWidth = metrics.stringWidth(xLabels.labels[i]);
             g2d.drawString(xLabels.labels[i],x-textWidth/2,origin.y + textHeight+3);
         }
@@ -234,9 +239,11 @@ public class LineChart {
                 continue;
             }
 //            int y = (int)(origin.y - (yLabels.series[i]-rooty)*v2py);
+            g2d.setColor(Color.GRAY);
             int y = (int) scaleRangeY.scaleValue(yLabels.series[i]);
             g2d.drawLine(origin.x+width,y,origin.x+width-sliceHeight, y);
             g2d.drawLine(origin.x,y,origin.x+sliceHeight, y);
+            g2d.setColor(Color.BLACK);
             int textWidth = metrics.stringWidth(yLabels.labels[i]);
             g2d.drawString(yLabels.labels[i],origin.x-textWidth-3,y+textHeight/2);
         }
