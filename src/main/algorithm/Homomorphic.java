@@ -18,7 +18,7 @@ public class Homomorphic {
     public int sampleRate=1;
 
     public double zcrThreshold=125;
-    public double powerThreshold=0.1;
+    public double powerThreshold=8.2;
 
     public Homomorphic(double[] samples, int sampleRate) {
         this.raws = samples;
@@ -205,7 +205,7 @@ public class Homomorphic {
             }
             power+=sample[i]*sample[i];
         }
-        power/=1E10;
+//        power*=1E10;
         System.out.println("ZCR "+zcr+" power "+power);
         return zcr<=zcrThreshold && power>=powerThreshold;
     }

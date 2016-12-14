@@ -42,7 +42,7 @@ public class Controller{
             int chanel = 0;
             int nChanels = wav.getNumChannels();
             int nFrames = (int)wav.getNumFrames();
-            int[][] raw = new int[nChanels][nFrames];
+            double[][] raw = new double[nChanels][nFrames];
             wav.readFrames(raw, nFrames);
             if(chanel>=nChanels){
                 throw new InvalidParameterException("Chanel index must less than nChanels");
