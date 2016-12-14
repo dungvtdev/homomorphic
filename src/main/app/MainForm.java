@@ -6,6 +6,7 @@ import jdk.nashorn.internal.objects.annotations.Constructor;
 import visual.chart.*;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.xml.bind.JAXBContext;
 import java.awt.*;
@@ -16,7 +17,10 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.BufferedImageOp;
 import java.awt.image.renderable.ContextualRenderedImageFactory;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
 import java.util.zip.GZIPOutputStream;
@@ -24,8 +28,7 @@ import java.util.zip.GZIPOutputStream;
 /**
  * Created by dung on 01/12/2016.
  */
-public class MainForm extends JFrame implements HomomorphicProcessListener,
-        CallbackListener<SettingsForm.SettingModel> {
+public class MainForm extends JFrame implements HomomorphicProcessListener{
 
     private Controller controller;
     private JLabel lbFileName;
@@ -45,11 +48,12 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
     private JTextField tCnSize;
     private JTextField tZcrThreshold;
     private JTextField tPowerThreshold;
+    private JTextArea txtWavInfo;
 
     private State state;
 
     // can chinh panel cho de
-    private final int[] colSizes = new int[]{250, 250, 250, 250};
+    private final int[] colSizes = new int[]{150, 280, 280, 280};
     private final int[] rowsSizes = new int[]{220, 220, 260};
     private final int panelGap = 20;
 
@@ -97,7 +101,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         /**
          * content panel
          */
-        Box content = Box.createHorizontalBox();
+//        Box content = Box.createHorizontalBox();
 //        content.setPreferredSize(new Dimension(1000,600));
 
 
@@ -122,14 +126,26 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         Container resultPanel = createResultPanel();
         Container paramsPanel = createParamsPanel();
 
-        vLeftBox.add(resultPanel);
-        vLeftBox.add(paramsPanel);
+        txtWavInfo = new JTextArea();
+        txtWavInfo.setEditable(false); // set textArea non-editable
+        txtWavInfo.setLineWrap(true);
+        txtWavInfo.setWrapStyleWord(true);
+        txtWavInfo.setPreferredSize(new Dimension(colSizes[0],rowsSizes[2]));
 
-        content.add(vLeftBox);
-        content.add(vRightBox);
+
+        vLeftBox.add(resultPanel);
+        vLeftBox.add(Box.createRigidArea(new Dimension(0,10)));
+        vLeftBox.add(paramsPanel);
+        vLeftBox.add(Box.createRigidArea(new Dimension(0,10)));
+        vLeftBox.add(txtWavInfo);
+
+//        content.add(vLeftBox);
+//        content.add(vRightBox);
 
         rootPanel.add(filePane, BorderLayout.PAGE_START);
-        rootPanel.add(content, BorderLayout.CENTER);
+//        rootPanel.add(content, BorderLayout.CENTER);
+        rootPanel.add(vLeftBox, BorderLayout.WEST);
+        rootPanel.add(vRightBox, BorderLayout.CENTER);
 
         this.setContentPane(rootPanel);
         this.pack();
@@ -144,19 +160,12 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         mfile.add(mFileOpen);
         mfile.add(mFileQuit);
 
-        JMenu mtools = new JMenu("Tools");
-        JMenuItem mToolFileInfo = new JMenuItem("File Info");
-        JMenuItem mToolSetting = new JMenuItem("Setting");
-        mtools.add(mToolFileInfo);
-        mtools.add(mToolSetting);
-
         JMenu mhelp = new JMenu("Help");
         JMenuItem mAbout = new JMenuItem("About");
         mhelp.add(mAbout);
 
 
         menuBar.add(mfile);
-        menuBar.add(mtools);
         menuBar.add(mhelp);
 
         mFileOpen.addActionListener((ActionEvent event) -> {
@@ -171,25 +180,13 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
                 controller.openFile(file);
                 lbFileName.setText("File: " + file.getName());
 
+                drawWavInfo();
                 processFirst(0);
             }
         });
 
         mFileQuit.addActionListener((ActionEvent event) -> {
             System.exit(0);
-        });
-
-        mToolFileInfo.addActionListener((ActionEvent event) -> {
-            new WavInfoForm(this, "Wav File Info", controller.wav);
-        });
-
-        mToolSetting.addActionListener((ActionEvent event) -> {
-            if (state == State.Normal)
-                return;
-            int cn = controller.homomorphic.cnSize;
-            int wndsize = controller.homomorphic.windowSize;
-            float delay = controller.delayTime;
-            new SettingsForm(this, new SettingsForm.SettingModel(cn, wndsize, delay), this);
         });
 
         mAbout.addActionListener((ActionEvent event) -> {
@@ -220,7 +217,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         });
 
         btnPlay.addActionListener((ActionEvent event) -> {
-            if (state == State.Normal) {
+            if (state == State.Normal || state == State.Nothing) {
                 setState(State.Running);
                 controller.processAuto(this, (x) -> {
                     setState(State.Normal);
@@ -306,8 +303,8 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         JLabel lb = new JLabel("Formants:");
         lbFormants = new JLabel("");
 
-        JPanel parent = new JPanel();
-        parent.setLayout(new BoxLayout(parent, BoxLayout.PAGE_AXIS));
+        Box parent = Box.createVerticalBox();
+//        parent.setLayout(new BoxLayout(parent, BoxLayout.PAGE_AXIS));
 
         parent.add(lb);
         parent.add(lbFormants);
@@ -321,31 +318,29 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
 
 //        JPanel parent = new JPanel();
 //        parent.setLayout(new BoxLayout(parent, BoxLayout.PAGE_AXIS));
-        Box parent = Box.createVerticalBox();
-
         Box vBox = Box.createVerticalBox();
+        vBox.add(lb);
 
         vBox.add(new JLabel("Window Size:"));
-        tWndSize = new JTextField();
+        tWndSize = new JTextField("");
 //        tWndSize.setMaximumSize(new Dimension(1000,100));
         vBox.add(tWndSize);
 
         vBox.add(new JLabel("Cn Size:"));
-        tCnSize = new JTextField();
+        tCnSize = new JTextField("");
 //        tCnSize.setMaximumSize(new Dimension(1000,100));
         vBox.add(tCnSize);
 
         vBox.add(new JLabel("Zrc Threshold:"));
-        tZcrThreshold = new JTextField();
+        tZcrThreshold = new JTextField("");
 //        tZcrThreshold.setMaximumSize(new Dimension(1000,100));
         vBox.add(tZcrThreshold);
 
         vBox.add(new JLabel("Power Threshold:"));
-        tPowerThreshold = new JTextField();
+        tPowerThreshold = new JTextField("");
 //        tPowerThreshold.setMaximumSize(new Dimension(1000,100));
         vBox.add(tPowerThreshold);
 
-        vBox.setMaximumSize(new Dimension(1000,500));
 //        vBox.add(Box.createRigidArea(new Dimension(1000,300)));
 
         Box hBox = Box.createHorizontalBox();
@@ -355,14 +350,9 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         hBox.add(Box.createRigidArea(new Dimension(10,0)));
         hBox.add(btnSubmit);
 
-        parent.add(lb);
-        parent.add(Box.createRigidArea(new Dimension(0,10)));
-        parent.add(vBox);
-        parent.add(Box.createRigidArea(new Dimension(0,10)));
-        parent.add(hBox);
-        parent.add(Box.createVerticalGlue());
-        parent.add(Box.createRigidArea(new Dimension(0,10)));
-
+//        vBox.setMaximumSize(new Dimension(200,800));
+        vBox.add(Box.createRigidArea(new Dimension(0,10)));
+        vBox.add(hBox);
 //        parent.add(new Box.Filler(new Dimension(0,100), new Dimension(0,1000), new Dimension(0,1000)));
 
         btnSubmit.addActionListener((ActionEvent e)->{
@@ -385,7 +375,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
 
         ResetParamsUI();
 
-        return parent;
+        return vBox;
     }
 
     private void ResetParamsUI(){
@@ -619,6 +609,16 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         }
     }
 
+    private void drawWavInfo(){
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream out = new PrintStream(baos);
+        out.println("Wav Info:");
+        controller.wav.display(out);
+        String content = new String(baos.toByteArray(), StandardCharsets.US_ASCII);
+
+        txtWavInfo.setText(content);
+    }
+
     private void drawSignal() {
         double[] raws = controller.getRawSignal();
         int max = (int) sampleToXTime(raws.length);
@@ -680,19 +680,6 @@ public class MainForm extends JFrame implements HomomorphicProcessListener,
         }
         wavChart.setCurrentPointer(offset);
         formantChart.setCurrentPointer(offset);
-    }
-
-    // when SettingsForm callback
-    @Override
-    public void onCallback(SettingsForm.SettingModel setting) {
-        controller.delayTime = setting.delay;
-        controller.homomorphic.windowSize = setting.windowsize;
-        int cn = (setting.cn > controller.homomorphic.windowSize) ?
-                controller.homomorphic.windowSize :
-                setting.cn;
-        controller.homomorphic.cnSize = cn;
-
-        process(controller.getOffset());
     }
 
     private double sampleToXTime(int value) {
