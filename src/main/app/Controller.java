@@ -111,7 +111,10 @@ public class Controller{
     }
 
     public boolean process(HomomorphicProcessListener listener, int offset){
-        currentOffset = offset;
+        if(offset>=0)
+            currentOffset = offset;
+        else
+            offset = currentOffset;
         List<double[]> result = homomorphic.process(offset, false);
         listener.onProcessReturn(true,result, offset);
         return true;

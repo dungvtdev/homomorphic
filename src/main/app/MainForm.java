@@ -366,7 +366,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener{
             controller.homomorphic.zcrThreshold = zcrThres;
             controller.homomorphic.powerThreshold = powerThres;
 
-            processFirst(0);
+            processFirst(-1);
         });
 
         btnReset.addActionListener((ActionEvent e)->{
