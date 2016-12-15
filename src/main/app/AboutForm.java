@@ -25,7 +25,7 @@ public class AboutForm extends JDialog implements ActionListener{
 
         String content = "BTL Môn học Xử lý tiếng nói.\n"+
                          "Đề bài: Xác định formant và đáp ứng tần số của tín hiệu tiếng nói.\n"+
-                         "Giáo viên giảng dạy: Thầy Trịnh Văn Loan."+
+                         "Giáo viên giảng dạy: Thầy Trịnh Văn Loan.\n"+
                          "Sinh viên: Vũ Trung Dũng - KSTN CNTT K57.";
         txt.setText(content);
 

@@ -105,16 +105,17 @@ public class Homomorphic {
 //        result.add(presponse);
 
         // formant
+        int maxFormant=4;
         int nFormant = 0;
         double[] fms=null;
 
         if(signalHasF0) {
-            fms = new double[5];
+            fms = new double[maxFormant];
             for (int i = 1; i < n / 2; i++) {
                 if ((mresponse[i] > mresponse[i + 1]) & (mresponse[i] > mresponse[i - 1])) {
                     fms[nFormant] = i * sampleRate / windowSize;
                     nFormant++;
-                    if (nFormant >= 5) break;
+                    if (nFormant >= maxFormant) break;
                 }
             }
             if (nFormant < fms.length) {
