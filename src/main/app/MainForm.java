@@ -666,7 +666,11 @@ public class MainForm extends JFrame implements HomomorphicProcessListener{
         double[] mresponse = result.get(1);
         double[] presponse = result.get(2);
 
-        magResponseChart.drawChart("Frequency (Hz)", "Magnitude (dB)", 0, (int) controller.getWav().getSampleRate(), mresponse);
+        int halflength=mresponse.length/2;
+        double[] halfmresponse = new double[halflength];
+        for(int i=0;i<halflength;i++)
+            halfmresponse[i]=mresponse[i];
+        magResponseChart.drawChart("Frequency (Hz)", "Magnitude (dB)", 0, (int) controller.getWav().getSampleRate()/2, halfmresponse);
         phaseResponseChart.drawChart("Frequency (Hz)", "Phase (Radiance)", 0, (int) controller.getWav().getSampleRate(), presponse);
 
         // formants
