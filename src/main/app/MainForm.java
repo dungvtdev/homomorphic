@@ -448,7 +448,7 @@ public class MainForm extends JFrame implements HomomorphicProcessListener{
         private BufferedImage buffer;
         protected boolean orderRedrawChart = false;
         private int currentSampleX = 0;
-        private int windowSampleSize = 512;
+//        private int windowSampleSize = 512;
 
         public WavChartPanel() {
             super();
@@ -473,8 +473,12 @@ public class MainForm extends JFrame implements HomomorphicProcessListener{
 
         private void drawWindow(Graphics2D g2d) {
             if (chart.getXScaleRange() != null && chart.getYScaleRange() != null) {
+                int wndsize = 512;
+                if(controller.homomorphic!=null)
+                    wndsize = controller.homomorphic.windowSize;
+
                 int xleft = (int) chart.getXScaleRange().scaleValue(sampleToXTime(currentSampleX)) + 1;
-                int xright = (int) chart.getXScaleRange().scaleValue(sampleToXTime(currentSampleX + windowSampleSize));
+                int xright = (int) chart.getXScaleRange().scaleValue(sampleToXTime(currentSampleX + wndsize));
                 int ybottom = (int) chart.getYScaleRange().scaleValue("min") - 1;
                 int ytop = (int) chart.getYScaleRange().scaleValue("max") + 1;
 
@@ -631,12 +635,12 @@ public class MainForm extends JFrame implements HomomorphicProcessListener{
             return;
 
         int halfWnd = controller.homomorphic.windowSize / 2;
-        int min = (int) sampleToXTime(halfWnd);
+        int gap = (int) sampleToXTime(halfWnd);
         int max = (int) sampleToXTime(controller.getRawSignal().length);
         double[] xs = new double[formants.length];
-        xs[0] = min;
+        xs[0] = gap;
         for (int i = 1; i < formants.length; i++)
-            xs[i] = xs[i - 1] + min;
+            xs[i] = xs[i - 1] + gap;
         this.formantChart.drawChart("Time (ms)", "Frequency (Hz)", 0, max, formants, xs);
 
     }
